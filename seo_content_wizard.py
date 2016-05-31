@@ -2,7 +2,7 @@
 ### Python 3.4.2
 
 ### 1. Get Top 10 search results on Google for a keyword. - done
-### 2. Analyze the contents of these pages.
+### 2. Analyze the contents of these pages. - done
 ### 3. Build a dictionary of keyword phrases, sorted by frequency of occurence.
 ### 4. Check if any of the top keywords is in the page we are trying to rank for this keyword.
 ### 5. Assign a score to our page.
@@ -21,6 +21,8 @@ import time
 import sys
 import codecs
 import string
+import collections
+import itertools
 
 if sys.stdout.encoding != 'utf-8':
   sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
@@ -33,6 +35,8 @@ opener = urllib.request.FancyURLopener()
 opener.addheaders = [('User-agent', 'Mozilla/5.0')]
 socket.setdefaulttimeout(10)
 new_links = []
+super_graph_two = [] # combined list of 2-word phrases
+super_graph_three = [] # combined list of 3-word phrases
 
 #####################
 # Request to Google #
@@ -46,7 +50,7 @@ try:
      a_file.write(results.decode("UTF-8"))               
    #print(results)
    links = re.findall(b'bottom:2px"><cite>([^"]+)</cite>', results)
-   for i in links[:1]: # set how many top results you need here
+   for i in links[:10]: # set how many top results you need here
      i = re.sub("<.*?>", "", i.decode("UTF-8")) # removing HTML tags, and turing the object into a string
      new_links.append(i)
      
@@ -68,7 +72,7 @@ except ValueError as e:
 
 def query_url(url):
   url = "http://" + url.replace("http://",'').replace("https://",'') # sanitizing the URI
-  print(url)
+  #print(url)
   request = opener.open(url)
   results = request.read()
   return results
@@ -80,9 +84,6 @@ def find_2_words_phrases(pagecontents):
   two_words_list = list(zip(new_list, new_list[1:]))
   return two_words_list
 
-#############
-# Execution #
-#############
 
 def find_3_words_phrases(pagecontents):
   x = pagecontents.decode('UTF-8').replace('\r','').replace('\n','').replace('\t','').split(' ')
@@ -91,11 +92,26 @@ def find_3_words_phrases(pagecontents):
   return three_words_list
 
 
-for elem in new_links:
+#############
+# Execution #
+#############
+
+
+for elem in new_links: # iterating through the list of Top 10 web pages ranking for the keyword
   z = re.sub("<.*?>", "", elem) # removing html tags from the list of website URLs
-  
   content_of_the_page = query_url(z) # get contents of every URL from the list
 
-  print(find_2_words_phrases(content_of_the_page)[45])
-  print(find_3_words_phrases(content_of_the_page)[45], find_3_words_phrases(content_of_the_page)[46], find_3_words_phrases(content_of_the_page)[47], find_3_words_phrases(content_of_the_page)[48])
-  print(elem)
+  super_graph_two.append(find_2_words_phrases(content_of_the_page)) # adds all 2-word combinations on the page to the super list
+  super_graph_three.append(find_3_words_phrases(content_of_the_page)) # adds all 3-word combinations on the page to the super list
+  
+  print(elem) # prits the URL being processed
+
+print(len(super_graph_two))
+print(len(super_graph_three[0]), len(super_graph_three[1]), len(super_graph_three[2]))
+
+graph_2_word = [item for sublist in super_graph_two for item in sublist]
+graph_3_word = [item for sublist in super_graph_three for item in sublist]
+print(graph_3_word[34])
+y = collections.Counter(graph_2_word)
+xvv = itertools.islice(y.items(), 0, 4)
+print(xvv)
