@@ -21,8 +21,9 @@ import time
 import sys
 import codecs
 import string
-import collections
-import itertools
+from collections import defaultdict
+
+
 
 if sys.stdout.encoding != 'utf-8':
   sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
@@ -42,6 +43,36 @@ super_graph_three = [] # combined list of 3-word phrases
 # Request to Google #
 #####################
 
+def query_url(url):
+  url = "http://" + url.replace("http://",'').replace("https://",'') # sanitizing the URI
+  #print(url)
+  request = opener.open(url)
+  results = request.read()
+  return results
+
+
+def find_2_words_phrases(pagecontents):
+  x = pagecontents.decode('UTF-8').replace('\r','').replace('\n','').replace('\t','').lower().split(' ')
+  new_list = list(filter(None, x))                                                                       # removing empty elements from the list
+  two_words_list = list(zip(new_list, new_list[1:]))                                                     # combining consecutive elements together
+  return two_words_list
+
+
+def find_3_words_phrases(pagecontents):
+  x = pagecontents.decode('UTF-8').replace('\r','').replace('\n','').replace('\t','').lower().split(' ')
+  new_list = list(filter(None, x))                                                                       # removing empty elements from the list
+  three_words_list = list(zip(new_list, new_list[1:], new_list[2:]))                                     # combining consecutive elements together
+  return three_words_list
+
+def leaders(list_of_keyword_phrases, top=1000):    # counting and sorting keywords in the dictionary, from the most often used, to the least often used.
+    counts = defaultdict(int)                      # top parameter is used to specify how many top keyword phrases to include in the final list
+    for keyword_phrase in list_of_keyword_phrases: # Source: http://stackoverflow.com/questions/2290962/python-how-to-get-sorted-count-of-items-in-a-list
+        counts[keyword_phrase] += 1
+    return sorted(counts.items(), reverse=True, key=lambda tup: tup[1])[:top]
+
+#############
+# Execution #
+#############
 
 try:
    se_req = opener.open(simple_query + keyword.replace(' ','%20'))
@@ -70,48 +101,20 @@ except ValueError as e:
    print('Error:', e)
    pass
 
-def query_url(url):
-  url = "http://" + url.replace("http://",'').replace("https://",'') # sanitizing the URI
-  #print(url)
-  request = opener.open(url)
-  results = request.read()
-  return results
+for elem in new_links:                          # iterating through the list of Top 10 web pages ranking for the keyword
+  z = re.sub("<.*?>", "", elem)                 # removing html tags from the list of website URLs
+  content_of_the_page = query_url(z)            # get contents of every URL from the list
 
-
-def find_2_words_phrases(pagecontents):
-  x = pagecontents.decode('UTF-8').replace('\r','').replace('\n','').replace('\t','').split(' ')
-  new_list = list(filter(None, x)) # removing empty elements from the list
-  two_words_list = list(zip(new_list, new_list[1:]))
-  return two_words_list
-
-
-def find_3_words_phrases(pagecontents):
-  x = pagecontents.decode('UTF-8').replace('\r','').replace('\n','').replace('\t','').split(' ')
-  new_list = list(filter(None, x)) # removing empty elements from the list
-  three_words_list = list(zip(new_list, new_list[1:], new_list[2:]))
-  return three_words_list
-
-
-#############
-# Execution #
-#############
-
-
-for elem in new_links: # iterating through the list of Top 10 web pages ranking for the keyword
-  z = re.sub("<.*?>", "", elem) # removing html tags from the list of website URLs
-  content_of_the_page = query_url(z) # get contents of every URL from the list
-
-  super_graph_two.append(find_2_words_phrases(content_of_the_page)) # adds all 2-word combinations on the page to the super list
-  super_graph_three.append(find_3_words_phrases(content_of_the_page)) # adds all 3-word combinations on the page to the super list
+  super_graph_two.append(find_2_words_phrases(content_of_the_page))     # adds all 2-word combinations on the page to the super list
+  super_graph_three.append(find_3_words_phrases(content_of_the_page))   # adds all 3-word combinations on the page to the super list
   
-  print(elem) # prits the URL being processed
-
-print(len(super_graph_two))
-print(len(super_graph_three[0]), len(super_graph_three[1]), len(super_graph_three[2]))
+  print(elem)  # prits the URL being processed
 
 graph_2_word = [item for sublist in super_graph_two for item in sublist]
 graph_3_word = [item for sublist in super_graph_three for item in sublist]
-print(graph_3_word[34])
-y = collections.Counter(graph_2_word)
-xvv = itertools.islice(y.items(), 0, 4)
-print(xvv)
+
+
+
+zzz = leaders(graph_3_word)
+for elem in zzz:
+  print(elem)
